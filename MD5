@@ -1,0 +1,9 @@
+1cb6841e78b196e29b3b515d9ca88c78 *DESCRIPTION
+0fdf58a3ccf2340833a28b3862e19af6 *NAMESPACE
+8b3eae8189d04a311a20441a95e05d16 *R/bricks.R
+460ffb6534ac5d97131e7b3a46848626 *R/sele_rank.R
+e4f375b7a04f7f4a81b560a170692e4d *R/sim_data.R
+4ea9f483411e3b9488d8e37a322eb7cb *R/tensor_regress.R
+a03a37c6e58163486b1dfc8f7991dacd *man/sele_rank.Rd
+12796852356d9fbd1d75066a6e4af82f *man/sim_data.Rd
+923b1d415009698c47ad027803788e49 *man/tensor_regress.Rd

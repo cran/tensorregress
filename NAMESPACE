@@ -1,0 +1,13 @@
+
+export(sele_rank)
+export(sim_data)
+export(tensor_regress)
+
+importFrom("MASS","ginv")
+importFrom("pracma","randortho")
+importFrom("speedglm","speedglm",'speedlm')
+importFrom("stats", "binomial", "coef", "dbinom", "dnorm", "dpois",
+               "glm", "lm", "logLik", "model.matrix", "optim", "plogis",
+               "poisson", "rbinom", "rnorm", "rpois", "runif")
+
+import(rTensor)
