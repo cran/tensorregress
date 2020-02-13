@@ -61,7 +61,7 @@ sele_rank = function(tsr, X_covar1 = NULL, X_covar2 = NULL, X_covar3 = NULL,rank
   upp = lapply(rank, FUN= tensor_regress,tsr = tsr,X_covar1 = X_covar1,X_covar2 = X_covar2,X_covar3 = X_covar3, Nsim = Nsim, cons = cons,lambda = lambda, alpha = alpha, solver = solver,dist=dist)
   
   lglk= unlist(lapply(seq(length(upp)), function(x) tail(upp[[x]]$lglk,1)))
-  BIC = unlist(lapply(seq(length(rank)), function(x) (prod(rank[[x]]) + sum((p-1-rank[[x]])*rank[[x]])) * log(prod(whole_shape))))
+  BIC = unlist(lapply(seq(length(rank)), function(x) (prod(rank[[x]]) + sum((p-rank[[x]])*rank[[x]])) * log(prod(whole_shape))))
   BIC = -2*lglk + BIC
   rank_matrix=cbind(rank_matrix,lglk,BIC)
   

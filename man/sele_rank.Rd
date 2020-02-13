@@ -4,9 +4,19 @@
 \alias{sele_rank}
 \title{Rank selection}
 \usage{
-sele_rank(tsr, X_covar1 = NULL, X_covar2 = NULL, X_covar3 = NULL,
-  rank_range, Nsim = 10, cons = "non", lambda = 0.1, alpha = 1,
-  solver = "CG", dist)
+sele_rank(
+  tsr,
+  X_covar1 = NULL,
+  X_covar2 = NULL,
+  X_covar3 = NULL,
+  rank_range,
+  Nsim = 10,
+  cons = "non",
+  lambda = 0.1,
+  alpha = 1,
+  solver = "CG",
+  dist
+)
 }
 \arguments{
 \item{tsr}{response tensor with 3 modes}

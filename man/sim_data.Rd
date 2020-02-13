@@ -4,8 +4,16 @@
 \alias{sim_data}
 \title{Simulation of tensor regression models}
 \usage{
-sim_data(seed, whole_shape = c(20, 20, 20), core_shape = c(3, 3, 3),
-  p = c(3, 3, 0), dist, dup, signal, block = rep(FALSE, 3))
+sim_data(
+  seed,
+  whole_shape = c(20, 20, 20),
+  core_shape = c(3, 3, 3),
+  p = c(3, 3, 0),
+  dist,
+  dup,
+  signal,
+  block = rep(FALSE, 3)
+)
 }
 \arguments{
 \item{seed}{seed for generating data}
