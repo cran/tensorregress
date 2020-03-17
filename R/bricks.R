@@ -1,4 +1,4 @@
-library(rTensor)
+#library(rTensor)
 library(pracma)
 #library(gtools)
 library(MASS)

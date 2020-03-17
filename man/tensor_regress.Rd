@@ -31,9 +31,7 @@ tensor_regress(
 
 \item{Nsim}{max number of iterations if update does not convergence}
 
-\item{cons}{the constraint method, "non" for without constraint, "vanilla" for global scale down at each iteration,
-
-                   "penalty" for adding log-barrier penalty to object function}
+\item{cons}{the constraint method, "non" for without constraint, "vanilla" for global scale down at each iteration, "penalty" for adding log-barrier penalty to object function}
 
 \item{lambda}{penalty coefficient for "penalty" constraint}
 
@@ -78,4 +76,10 @@ data=sim_data(seed, whole_shape = c(20,20,20), core_shape=c(3,3,3),
 p=c(5,5,5),dist=dist, dup=5, signal=4)
 re = tensor_regress(data$tsr[[1]],data$X_covar1,data$X_covar2,data$X_covar3,
 core_shape=c(3,3,3),Nsim=10, cons = 'non', dist = dist)
+}
+\references{
+Z. Xu, J. Hu, and M. Wang, "Generalized Tensor Regression with Covariates on Multiple Modes". 2019. <arXiv:1910.09499>. URL: https://arxiv.org/abs/1910.09499
+}
+\author{
+Z. Xu \email{zxu444@wisc.edu}  and J. Hu \email{jhu267@wisc.edu}
 }
