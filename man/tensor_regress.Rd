@@ -2,7 +2,7 @@
 % Please edit documentation in R/tensor_regress.R
 \name{tensor_regress}
 \alias{tensor_regress}
-\title{Generalized Tensor Regression}
+\title{Supervised Tensor Decomposition with Interactive Side Information}
 \usage{
 tensor_regress(
   tsr,
@@ -15,19 +15,20 @@ tensor_regress(
   lambda = 0.1,
   alpha = 1,
   solver = "CG",
-  dist = c("binary", "poisson", "normal")
+  dist = c("binary", "poisson", "normal"),
+  traj_long = FALSE
 )
 }
 \arguments{
 \item{tsr}{response tensor with 3 modes}
 
-\item{X_covar1}{covariate on first mode}
+\item{X_covar1}{side information on first mode}
 
-\item{X_covar2}{covariate on second mode}
+\item{X_covar2}{side information on second mode}
 
-\item{X_covar3}{covariate on third mode}
+\item{X_covar3}{side information on third mode}
 
-\item{core_shape}{the Tucker rank of the regression coefficients}
+\item{core_shape}{the Tucker rank of the tensor decomposition}
 
 \item{Nsim}{max number of iterations if update does not convergence}
 
@@ -40,11 +41,13 @@ tensor_regress(
 \item{solver}{solver for solving object function when using "penalty" constraint, see "details"}
 
 \item{dist}{distribution of the response tensor, see "details"}
+
+\item{traj_long}{if "TRUE", set the minimal iteration number to 8; if "FALSE", set the minimal iteration number to 0}
 }
 \value{
 a list containing the following:
 
-                 \code{W} {a list of orthogonal coefficient matrices - one for each mode, with the number of columns given by \code{core_shape}}
+                 \code{W} {a list of orthogonal factor matrices - one for each mode, with the number of columns given by \code{core_shape}}
 
                  \code{G}  {an array, core tensor with the size specified by \code{core_shape}}
 
@@ -59,8 +62,8 @@ a list containing the following:
                  \code{violate} {a vector listing whether each iteration violates the max norm constraint on the linear predictor, \code{1} indicates violation}
 }
 \description{
-Tensor-response regression given covariates on multiple modes. Main function in the package. The function takes a response tensor, multiple covariate matrices, and a desired Tucker rank as input. The output is a constrained
-MLE for the coefficient tensor.
+Supervised tensor decomposition with interactive side information on multiple modes. Main function in the package. The function takes a response tensor, multiple side information matrices,
+and a desired Tucker rank as input. The output is a rank-constrained M-estimate of the core tensor and factor matrices.
 }
 \details{
 Constraint \code{penalty} adds log-barrier regularizer to
@@ -76,10 +79,4 @@ data=sim_data(seed, whole_shape = c(20,20,20), core_shape=c(3,3,3),
 p=c(5,5,5),dist=dist, dup=5, signal=4)
 re = tensor_regress(data$tsr[[1]],data$X_covar1,data$X_covar2,data$X_covar3,
 core_shape=c(3,3,3),Nsim=10, cons = 'non', dist = dist)
-}
-\references{
-Z. Xu, J. Hu, and M. Wang, "Generalized Tensor Regression with Covariates on Multiple Modes". 2019. <arXiv:1910.09499>. URL: https://arxiv.org/abs/1910.09499
-}
-\author{
-Z. Xu \email{zxu444@wisc.edu}  and J. Hu \email{jhu267@wisc.edu}
 }

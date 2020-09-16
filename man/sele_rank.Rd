@@ -21,11 +21,11 @@ sele_rank(
 \arguments{
 \item{tsr}{response tensor with 3 modes}
 
-\item{X_covar1}{covariate on first mode}
+\item{X_covar1}{side information on first mode}
 
-\item{X_covar2}{covariate on second mode}
+\item{X_covar2}{side information on second mode}
 
-\item{X_covar3}{covariate on third mode}
+\item{X_covar3}{side information on third mode}
 
 \item{rank_range}{a matrix containing rank candidates on each row}
 
@@ -51,16 +51,16 @@ a list containing the following:
                    \code{result}  a matrix containing rank candidate and its loglikelihood and BIC on each row
 }
 \description{
-Estimate the Tucker rank of coefficient tensor based on BIC criterion. The choice of BIC
+Estimate the Tucker rank of tensor decomposition based on BIC criterion. The choice of BIC
  aims to balance between the goodness-of-fit for the data and the degree of freedom in the population model.
 }
 \details{
 For rank selection, recommend using non-constraint version.
-            
+
            Constraint \code{penalty} adds log-barrier regularizer to
            general object function (negative log-likelihood). The main function uses solver in function "optim" to
            solve the objective function. The "solver" passes to the argument "method" in function "optim".
-           
+
             \code{dist} specifies three distributions of response tensor: binary, poisson and normal distributions.
 }
 \examples{
@@ -68,7 +68,7 @@ seed=24
 dist='binary'
 data=sim_data(seed, whole_shape = c(20,20,20),
 core_shape=c(3,3,3),p=c(5,5,5),dist=dist, dup=5, signal=4)
-rank_range = rbind(c(3,3,3),c(3,3,2),c(3,2,2),c(2,2,2),c(3,2,3)) 
+rank_range = rbind(c(3,3,3),c(3,3,2),c(3,2,2),c(2,2,2),c(3,2,3))
 re = sele_rank(data$tsr[[1]],data$X_covar1,data$X_covar2,data$X_covar3,
  rank_range = rank_range,Nsim=10,cons = 'non',dist = dist)
 }

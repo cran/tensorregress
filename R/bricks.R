@@ -55,19 +55,41 @@ loss_gr <- function(beta,y,X,lambda,alpha,dist){
 
 glm_modify=function(y,x,dist){
   if(dist=="binary"){
-    fit1 =suppressWarnings(speedglm(y~-1+x,family=binomial(link="logit")))
-
+    fit1 = tryCatch({
+        speedglm(y~-1+x,family=binomial(link="logit"))
+    }, warning = function(w) {
+ fit1=suppressWarnings(speedglm(y~-1+x,family=binomial(link="logit")))
+    }, error = function(e) {
+        return_value="non-convergence"
+    })
+    
+    if(inherits(fit1,"character")==TRUE){
+        return(list(rep(0,dim(as.matrix(x))[2]),-Inf))
+    }else
     return(list(coef(fit1), logLik(fit1)))
   }
+  
+  
   else if (dist=="normal"){
     fit1 =speedlm(y~-1+x)
 
     return(list(coef(fit1), logLik(fit1)))
   }
   else if (dist=="poisson"){
-    fit1 =suppressWarnings(speedglm(y~-1+x,family=poisson(link="log")))
+
+      fit1 = tryCatch({
+        speedglm(y~-1+x,family=poisson(link="log"))
+    }, warning = function(w) {
+   fit1=suppressWarnings(speedglm(y~-1+x,family=poisson(link="log")))
+    }, error = function(e) {
+        return_value="non-convergence"
+    })
+    
+    if(inherits(fit1,"character")==TRUE){
+        return(list(rep(0,dim(as.matrix(x))[2]),-Inf))
+    }else
     return(list(coef(fit1), logLik(fit1)))
-  }
+   }
 }
 
 ############################################################

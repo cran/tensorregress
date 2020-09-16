@@ -25,5 +25,3 @@ importFrom("speedglm","speedglm",'speedlm')
 importFrom("stats", "binomial", "coef", "dbinom", "dnorm", "dpois",
                "glm", "lm", "logLik", "model.matrix", "optim", "plogis",
                "poisson", "rbinom", "rnorm", "rpois", "runif","fft")
-
-

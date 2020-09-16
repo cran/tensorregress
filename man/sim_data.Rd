@@ -2,10 +2,10 @@
 % Please edit documentation in R/tensor_regress.R
 \name{sim_data}
 \alias{sim_data}
-\title{Simulation of tensor regression models}
+\title{Simulation of supervised tensor decomposition models}
 \usage{
 sim_data(
-  seed,
+  seed = NA,
   whole_shape = c(20, 20, 20),
   core_shape = c(3, 3, 3),
   p = c(3, 3, 0),
@@ -20,9 +20,9 @@ sim_data(
 
 \item{whole_shape}{a vector containing dimension of the tensor}
 
-\item{core_shape}{a vector containing Tucker rank of the coefficient tensor}
+\item{core_shape}{a vector containing Tucker rank of the tensor decomposition}
 
-\item{p}{a vector containing numbers of covariates on each mode, see "details"}
+\item{p}{a vector containing numbers of side information on each mode, see "details"}
 
 \item{dist}{distribution of response tensor, see "details"}
 
@@ -37,13 +37,13 @@ a list containing the following:
 
 \code{tsr} {a list of simulated tensors, with the number of replicates specified by \code{dup}}
 
-\code{X_covar1}  {a matrix, covariate on first mode}
+\code{X_covar1}  {a matrix, side information on first mode}
 
-\code{X_covar2}  {a matrix, covariate on second mode}
+\code{X_covar2}  {a matrix, side information on second mode}
 
-\code{X_covar3}  {a matrix, covariate on third mode}
+\code{X_covar3}  {a matrix, side information on third mode}
 
-\code{W} {a list of orthogonal coefficient matrices - one for each mode, with the number of columns given by \code{core_shape}}
+\code{W} {a list of orthogonal factor matrices - one for each mode, with the number of columns given by \code{core_shape}}
 
 \code{G}  {an array, core tensor with size specified by \code{core_shape}}
 
@@ -52,7 +52,7 @@ a list containing the following:
 \code{U} {an array, linear predictor,i.e. Tucker product of \code{C_ts},\code{X_covar1},\code{X_covar2},\code{X_covar3}}
 }
 \description{
-Generate response tensors with multiple covariates under different simulation models, specifically for tensors with 3 modes
+Generate tensor data with multiple side information matrices under different simulation models, specifically for tensors with 3 modes
 }
 \details{
 By default non-positive entry in \code{p} indicates no covariate on the corresponding mode of the tensor.
