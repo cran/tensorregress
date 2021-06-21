@@ -10,12 +10,13 @@ sele_rank(
   X_covar2 = NULL,
   X_covar3 = NULL,
   rank_range,
-  Nsim = 10,
+  niter = 10,
   cons = "non",
   lambda = 0.1,
   alpha = 1,
   solver = "CG",
-  dist
+  dist,
+  initial = c("random", "QR_tucker")
 )
 }
 \arguments{
@@ -29,7 +30,7 @@ sele_rank(
 
 \item{rank_range}{a matrix containing rank candidates on each row}
 
-\item{Nsim}{max number of iterations if update does not convergence}
+\item{niter}{max number of iterations if update does not convergence}
 
 \item{cons}{the constraint method, "non" for without constraint, "vanilla" for global scale down at each iteration,
 
@@ -42,6 +43,8 @@ sele_rank(
 \item{solver}{solver for solving object function when using "penalty" constraint, see "details"}
 
 \item{dist}{distribution of response tensor, see "details"}
+
+\item{initial}{initialization of the alternating optimiation, "random" for random initialization, "QR_tucker" for deterministic initialization using tucker decomposition}
 }
 \value{
 a list containing the following:
@@ -70,5 +73,5 @@ data=sim_data(seed, whole_shape = c(20,20,20),
 core_shape=c(3,3,3),p=c(5,5,5),dist=dist, dup=5, signal=4)
 rank_range = rbind(c(3,3,3),c(3,3,2),c(3,2,2),c(2,2,2),c(3,2,3))
 re = sele_rank(data$tsr[[1]],data$X_covar1,data$X_covar2,data$X_covar3,
- rank_range = rank_range,Nsim=10,cons = 'non',dist = dist)
+ rank_range = rank_range,niter=10,cons = 'non',dist = dist,initial = "random")
 }

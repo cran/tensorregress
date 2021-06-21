@@ -12,7 +12,8 @@ sim_data(
   dist,
   dup,
   signal,
-  block = rep(FALSE, 3)
+  block = rep(FALSE, 3),
+  ortho = FALSE
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ sim_data(
 \item{signal}{a scalar controlling the max norm of the linear predictor}
 
 \item{block}{a vector containing boolean variables, see "details"}
+
+\item{ortho}{if "TRUE", generate side information matrices with orthogonal columns; if "FLASE" (default), generate side information matrices with gaussian entries}
 }
 \value{
 a list containing the following:

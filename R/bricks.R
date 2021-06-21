@@ -71,7 +71,12 @@ glm_modify=function(y,x,dist){
   
   
   else if (dist=="normal"){
+    
     fit1 =speedlm(y~-1+x)
+    
+    if(fit1$RSS <= 0){
+      fit1 = lm(y~-1 + x)
+    }
 
     return(list(coef(fit1), logLik(fit1)))
   }
@@ -96,6 +101,7 @@ glm_modify=function(y,x,dist){
 
 #    form U = X*Beta ## in parallel
 glm_mat = function(Y,X,dist){
+  
   R = dim(X)[2]   ## R in note
   p = dim(Y)[2]
   ma = mapply(glm_modify, y =  as.data.frame(Y),MoreArgs = list(X),dist=dist)

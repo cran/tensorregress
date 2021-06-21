@@ -9,13 +9,14 @@
 #' @param X_covar2    side information on second mode
 #' @param X_covar3    side information on third mode
 #' @param core_shape  the Tucker rank of the tensor decomposition
-#' @param Nsim        max number of iterations if update does not convergence
+#' @param niter        max number of iterations if update does not convergence
 #' @param cons        the constraint method, "non" for without constraint, "vanilla" for global scale down at each iteration, "penalty" for adding log-barrier penalty to object function
 #' @param lambda      penalty coefficient for "penalty" constraint
 #' @param alpha       max norm constraint on linear predictor
 #' @param solver      solver for solving object function when using "penalty" constraint, see "details"
 #' @param dist        distribution of the response tensor, see "details"
 #' @param traj_long   if "TRUE", set the minimal iteration number to 8; if "FALSE", set the minimal iteration number to 0
+#' @param initial     initialization of the alternating optimiation, "random" for random initialization, "QR_tucker" for deterministic initialization using tucker decomposition
 #' @return     a list containing the following:
 #'
 #'                  \code{W} {a list of orthogonal factor matrices - one for each mode, with the number of columns given by \code{core_shape}}
@@ -39,6 +40,8 @@
 #'            solve the objective function. The "solver" passes to the argument "method" in function "optim".
 #'
 #'            \code{dist} specifies three distributions of response tensor: binary, poisson and normal distribution.
+#'            
+#'            If \code{dist} is set to "normal" and \code{initial} is set to "QR_tucker", then the function returns the results after initialization.
 #'
 #'
 #' @export
@@ -48,11 +51,13 @@
 #' data=sim_data(seed, whole_shape = c(20,20,20), core_shape=c(3,3,3),
 #' p=c(5,5,5),dist=dist, dup=5, signal=4)
 #' re = tensor_regress(data$tsr[[1]],data$X_covar1,data$X_covar2,data$X_covar3,
-#' core_shape=c(3,3,3),Nsim=10, cons = 'non', dist = dist)
+#' core_shape=c(3,3,3),niter=10, cons = 'non', dist = dist,initial = "random")
 
-tensor_regress = function(tsr,X_covar1 = NULL, X_covar2 = NULL,X_covar3 = NULL, core_shape, Nsim=20, cons = c("non","vanilla","penalty"), lambda = 0.1, alpha = 1, solver ="CG",dist = c("binary", "poisson","normal"),traj_long=FALSE){
-
-
+tensor_regress = function(tsr,X_covar1 = NULL, X_covar2 = NULL,X_covar3 = NULL, core_shape, niter=20, cons = c("non","vanilla","penalty"), lambda = 0.1, alpha = 1, 
+                          solver ="CG",dist = c("binary", "poisson","normal"),traj_long=FALSE, initial = c("random","QR_tucker")){
+  
+  # initial: "random" for random initialization; "QR_tucker" for QR-based tucker initialization
+  
   tsr = as.tensor(tsr)
   Y_1 = unfold(tsr, row_idx = 1, col_idx = c(2,3))@data
   Y_2 = unfold(tsr, row_idx = 2, col_idx = c(1,3))@data
@@ -66,23 +71,84 @@ tensor_regress = function(tsr,X_covar1 = NULL, X_covar2 = NULL,X_covar3 = NULL, 
   if(is.null(X_covar2)|(identical(X_covar2,diag(d2)))) {X_covar2 = diag(d2) ; un_m2 = TRUE}
   if(is.null(X_covar3)|(identical(X_covar3,diag(d3)))) {X_covar3 = diag(d3) ; un_m3 = TRUE}
   p1 = dim(X_covar1)[2] ; p2 = dim(X_covar2)[2] ; p3 = dim(X_covar3)[2]
-
+  
 
   if(dist=="binary"){
     tsr.transform=as.tensor(2*tsr@data-1)
   }else if(dist=="poisson"){
-    tsr.transform=as.tensor(log(tsr@data+0.1))
+    tsr.transform=as.tensor(log(tsr@data+0.5)) # change from 0.1 to 0.5
   }else if (dist=="normal"){
     tsr.transform=tsr
   }
 
-  C_ts=ttl(tsr.transform,list(ginv(X_covar1),ginv(X_covar2),ginv(X_covar3)),ms=c(1,2,3))
+  
+  if(initial == "random"){ # random initialization
+    
+    C_ts=ttl(tsr.transform,list(ginv(X_covar1),ginv(X_covar2),ginv(X_covar3)),ms=c(1,2,3))
+    
+    mr1 = qr(unfold(C_ts,row_idx = 1, col_idx = c(2,3))@data)$rank
+    mr2 = qr(unfold(C_ts,row_idx = 2, col_idx = c(1,3))@data)$rank
+    mr3 = qr(unfold(C_ts,row_idx = 3, col_idx = c(1,2))@data)$rank
+    
+    if(mr1 < r1|mr2 < r2|mr3 < r3){
+      warning("The input rank is higher than the data could fit. Estimated factors are not reliable because of infinitely many solutions. Estimated coefficient tensor is still reliable.",immediate. = T)
+    }
+    
+    W1=randortho(p1)[,1:core_shape[1]];W2=randortho(p2)[,1:core_shape[2]];W3=randortho(p3)[,1:core_shape[3]]
+    G=ttl(C_ts,list(t(W1),t(W2),t(W3)),ms=1:3)
+    
+  }else if(initial == "QR_tucker"){ # QR based tucker initialization
+    
+    # tckr = tucker(C_ts, ranks = core_shape)
+    # W1 = tckr$U[[1]] ; W2 = tckr$U[[2]] ; W3 = tckr$U[[3]] ## tucker factors
+    # G = tckr$Z
+    
+    # use new QR generalization
+    qr1 = qr(X_covar1); qr2 = qr(X_covar2); qr3 = qr(X_covar3)
+    Q1 = qr.Q(qr1); Q2 = qr.Q(qr2); Q3 = qr.Q(qr3)
+    R1 = qr.R(qr1); R2 = qr.R(qr2); R3 = qr.R(qr3)
+    
+    new_y = ttl(tsr.transform, list_mat = list(t(Q1), t(Q2),t(Q3)), c(1,2,3)) # Y \times Q^T = B \times R
+    res_un = tucker(new_y,ranks = core_shape) # HOOI, not random
 
-  #tckr = tucker(C_ts, ranks = core_shape)
-  #W1 = tckr$U[[1]] ; W2 = tckr$U[[2]] ; W3 = tckr$U[[3]] ## tucker factors
-  #G = tckr$Z
-  W1=randortho(p1)[,1:core_shape[1]];W2=randortho(p2)[,1:core_shape[2]];W3=randortho(p3)[,1:core_shape[3]]
-  G=ttl(C_ts,list(t(W1),t(W2),t(W3)),ms=1:3)
+    C_ts = ttl(res_un$est, list(solve(R1),solve(R2), solve(R3)), c(1,2,3))
+    
+    # output factors need to be orthogonal
+    ortho_decomp = tucker(C_ts, ranks = core_shape)
+    
+    W1 = ortho_decomp$U[[1]]
+    W2 = ortho_decomp$U[[2]]
+    W3 = ortho_decomp$U[[3]]
+    
+    G = ortho_decomp$Z
+    
+    if(dist == "normal"){
+      U = ttl(C_ts, list(X_covar1, X_covar2, X_covar3),c(1,2,3))
+      
+      lglk = loglike(tsr@data,U@data,dist)
+      
+      sigma_est=mean((tsr@data-U_to_mean(U@data,dist))^2)
+      violate = 0
+      return(list(W = list(W1 = W1,W2 = W2,W3 = W3),G = G@data,U=U@data, C_ts = C_ts@data,lglk = lglk, sigma=sigma_est,violate = violate))
+      
+    }
+  
+    # G = res_un$Z
+    # 
+    # W1 = solve(R1)%*%res_un$U[[1]]; W2 = solve(R2)%*%res_un$U[[2]]; W3 = solve(R3)%*%res_un$U[[3]]
+    # 
+    # if(dist == "normal"){ # normal
+    #   C_ts=ttl(G,list(W1,W2,W3),ms = c(1,2,3))
+    #   
+    #   U = ttl(C_ts, list(X_covar1, X_covar2, X_covar3),c(1,2,3))
+    #   
+    #   lglk = loglike(tsr@data,U@data,dist)
+    #   
+    #   sigma_est=mean((tsr@data-U_to_mean(U@data,dist))^2)
+    #   violate = 0
+    #   return(list(W = list(W1 = W1,W2 = W2,W3 = W3),G = G@data,U=U@data, C_ts = C_ts@data,lglk = lglk, sigma=sigma_est,violate = violate))
+    # }
+  }
 
   A = X_covar1%*%W1
   B = X_covar2%*%W2
@@ -93,7 +159,7 @@ tensor_regress = function(tsr,X_covar1 = NULL, X_covar2 = NULL,X_covar3 = NULL, 
   lglk=core$lglk
   violate=core$violate
 
-  for(n in 1:Nsim){
+  for(n in 1:niter){
     ## parameter from previous step
 
     W10 = W1 ; W20 = W2 ; W30 = W3 ; G0=G; A0=A;B0=B;C0=C;lglk0=tail(lglk,1);
@@ -107,6 +173,10 @@ tensor_regress = function(tsr,X_covar1 = NULL, X_covar2 = NULL,X_covar3 = NULL, 
 
     if(dim(re[[1]])[1]==1) W1=t(re[[1]]) else W1 = as.matrix(re[[1]])
     lglk = c(lglk,re[[2]])
+    
+    # replace NA -> 0
+    W1[is.na(W1)] = 0
+
 
     ## orthogonal W1*
     qr_res=qr(W1)
@@ -116,6 +186,7 @@ tensor_regress = function(tsr,X_covar1 = NULL, X_covar2 = NULL,X_covar3 = NULL, 
 
     ##### calculate A
     A = X_covar1%*%W1;
+    
     ##### update W2
     G_AC = ttl(G, list(A,C), ms = c(1,3))
     G_AC2 = unfold(G_AC, row_idx = 2, col_idx = c(1,3))@data
@@ -125,6 +196,10 @@ tensor_regress = function(tsr,X_covar1 = NULL, X_covar2 = NULL,X_covar3 = NULL, 
 
     if(dim(re[[1]])[1]==1) W2=t(re[[1]]) else W2 = as.matrix(re[[1]])
     lglk = c(lglk,re[[2]])
+    
+    # replace NA -> 0
+    W2[is.na(W2)] = 0
+    
 
     ## orthogonal W2*
     qr_res=qr(W2)
@@ -144,8 +219,10 @@ tensor_regress = function(tsr,X_covar1 = NULL, X_covar2 = NULL,X_covar3 = NULL, 
     } else {re = glm_two(Y_3, X_covar3, G_AB3,dist=dist)}
 
     if(dim(re[[1]])[1]==1) W3=t(re[[1]]) else W3 = as.matrix(re[[1]])
-
     lglk = c(lglk,re[[2]])
+    
+    # replace NA -> 0
+    W3[is.na(W3)] = 0
 
     ## orthogonal W3*
     qr_res=qr(W3)
@@ -206,6 +283,7 @@ tensor_regress = function(tsr,X_covar1 = NULL, X_covar2 = NULL,X_covar3 = NULL, 
 #' @param dup          number of simulated tensors from the same linear predictor
 #' @param signal       a scalar controlling the max norm of the linear predictor
 #' @param block        a vector containing boolean variables, see "details"
+#' @param ortho        if "TRUE", generate side information matrices with orthogonal columns; if "FLASE" (default), generate side information matrices with gaussian entries
 #' @return     a list containing the following:
 #'
 #' \code{tsr} {a list of simulated tensors, with the number of replicates specified by \code{dup}}
@@ -243,7 +321,7 @@ tensor_regress = function(tsr,X_covar1 = NULL, X_covar2 = NULL,X_covar3 = NULL, 
 #####---- This is the function used for generating data through different distribution
 #         of core tensor in  semi-supervised setting
 ## p is the dimension of the covaraite. p = 0 represents the case without covaraites
-sim_data = function(seed=NA, whole_shape = c(20,20,20), core_shape = c(3,3,3),p=c(3,3,0),dist, dup, signal,block=rep(FALSE,3)){
+sim_data = function(seed=NA, whole_shape = c(20,20,20), core_shape = c(3,3,3),p=c(3,3,0),dist, dup, signal,block=rep(FALSE,3), ortho = FALSE){
 
   d1 = whole_shape[1] ; d2 = whole_shape[2] ; d3 = whole_shape[3]
   r1 = core_shape[1] ; r2 = core_shape[2] ; r3 = core_shape[3]
@@ -274,14 +352,22 @@ sim_data = function(seed=NA, whole_shape = c(20,20,20), core_shape = c(3,3,3),p=
     X_covar1=diag(1,d1)
     p1=d1
   }else{
-    X_covar1 = matrix(rnorm(d1*p1,mean = 0, sd = 1/sqrt(d1)),d1,p1)
+    if(ortho){ # generate X with orthogonal columns
+      X_covar1 = randortho(d1)[,1:p1]
+    }else{
+      X_covar1 = matrix(rnorm(d1*p1,mean = 0, sd = 1/sqrt(d1)),d1,p1)
+    }
   }
 
   if(p2<=0){
     X_covar2=diag(1,d2)
     p2=d2
   }else{
-    X_covar2 = matrix(rnorm(d2*p2,mean = 0, sd =1/sqrt(d2)),d2,p2)
+    if(ortho){ # generate X with orthogonal columns
+      X_covar2 = randortho(d2)[,1:p2]
+    }else{
+      X_covar2 = matrix(rnorm(d2*p2,mean = 0, sd =1/sqrt(d2)),d2,p2)
+    }
   }
 
 
@@ -289,7 +375,11 @@ sim_data = function(seed=NA, whole_shape = c(20,20,20), core_shape = c(3,3,3),p=
     X_covar3=diag(1,d3)
     p3=d3
   }else{
-    X_covar3 = matrix(rnorm(d3*p3,mean = 0, sd = 1/sqrt(d3)),d3,p3)
+    if(ortho){ # generate X with orthogonal columns
+      X_covar3 = randortho(d3)[,1:p3]
+    }else{
+      X_covar3 = matrix(rnorm(d3*p3,mean = 0, sd = 1/sqrt(d3)),d3,p3)
+    }
   }
 
   #### if use block, p and r should larger than 1 of smaller than 0
@@ -374,7 +464,7 @@ sim_data = function(seed=NA, whole_shape = c(20,20,20), core_shape = c(3,3,3),p=
 #' @param X_covar2    side information on second mode
 #' @param X_covar3    side information on third mode
 #' @param rank_range  a matrix containing rank candidates on each row
-#' @param Nsim        max number of iterations if update does not convergence
+#' @param niter        max number of iterations if update does not convergence
 #' @param cons        the constraint method, "non" for without constraint, "vanilla" for global scale down at each iteration,
 #'
 #'                    "penalty" for adding log-barrier penalty to object function.
@@ -382,6 +472,7 @@ sim_data = function(seed=NA, whole_shape = c(20,20,20), core_shape = c(3,3,3),p=
 #' @param alpha       max norm constraint on linear predictor
 #' @param solver      solver for solving object function when using "penalty" constraint, see "details"
 #' @param dist        distribution of response tensor, see "details"
+#' @param initial     initialization of the alternating optimiation, "random" for random initialization, "QR_tucker" for deterministic initialization using tucker decomposition
 #' @return     a list containing the following:
 #'
 #'                    \code{rank} a vector with selected rank with minimal BIC
@@ -405,14 +496,14 @@ sim_data = function(seed=NA, whole_shape = c(20,20,20), core_shape = c(3,3,3),p=
 #' core_shape=c(3,3,3),p=c(5,5,5),dist=dist, dup=5, signal=4)
 #' rank_range = rbind(c(3,3,3),c(3,3,2),c(3,2,2),c(2,2,2),c(3,2,3))
 #' re = sele_rank(data$tsr[[1]],data$X_covar1,data$X_covar2,data$X_covar3,
-#'  rank_range = rank_range,Nsim=10,cons = 'non',dist = dist)
+#'  rank_range = rank_range,niter=10,cons = 'non',dist = dist,initial = "random")
 
 
 
 
 
 
-sele_rank = function(tsr, X_covar1 = NULL, X_covar2 = NULL, X_covar3 = NULL,rank_range,Nsim=10,cons = 'non', lambda = 0.1, alpha = 1, solver ='CG',dist){
+sele_rank = function(tsr, X_covar1 = NULL, X_covar2 = NULL, X_covar3 = NULL,rank_range,niter=10,cons = 'non', lambda = 0.1, alpha = 1, solver ='CG',dist, initial = c("random","QR_tucker")){
   whole_shape=dim(tsr)
   p=rep(0,3)
   if(is.null(X_covar1)) p[1]=whole_shape[1] else p[1]=dim(X_covar1)[2]
@@ -425,7 +516,7 @@ sele_rank = function(tsr, X_covar1 = NULL, X_covar2 = NULL, X_covar3 = NULL,rank
 
   whole_shape = dim(tsr)
   rank = lapply(1:dim(rank)[1], function(x) rank[x,]) ## turn rank to a list
-  upp = lapply(rank, FUN= tensor_regress,tsr = tsr,X_covar1 = X_covar1,X_covar2 = X_covar2,X_covar3 = X_covar3, Nsim = Nsim, cons = cons,lambda = lambda, alpha = alpha, solver = solver,dist=dist)
+  upp = lapply(rank, FUN= tensor_regress,tsr = tsr,X_covar1 = X_covar1,X_covar2 = X_covar2,X_covar3 = X_covar3, niter = niter, cons = cons,lambda = lambda, alpha = alpha, solver = solver,dist=dist, initial = initial)
 
   lglk= unlist(lapply(seq(length(upp)), function(x) tail(upp[[x]]$lglk,1)))
   BIC = unlist(lapply(seq(length(rank)), function(x) (prod(rank[[x]]) + sum((p-rank[[x]])*rank[[x]])) * log(prod(whole_shape))))

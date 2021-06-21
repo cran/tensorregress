@@ -10,13 +10,14 @@ tensor_regress(
   X_covar2 = NULL,
   X_covar3 = NULL,
   core_shape,
-  Nsim = 20,
+  niter = 20,
   cons = c("non", "vanilla", "penalty"),
   lambda = 0.1,
   alpha = 1,
   solver = "CG",
   dist = c("binary", "poisson", "normal"),
-  traj_long = FALSE
+  traj_long = FALSE,
+  initial = c("random", "QR_tucker")
 )
 }
 \arguments{
@@ -30,7 +31,7 @@ tensor_regress(
 
 \item{core_shape}{the Tucker rank of the tensor decomposition}
 
-\item{Nsim}{max number of iterations if update does not convergence}
+\item{niter}{max number of iterations if update does not convergence}
 
 \item{cons}{the constraint method, "non" for without constraint, "vanilla" for global scale down at each iteration, "penalty" for adding log-barrier penalty to object function}
 
@@ -43,6 +44,8 @@ tensor_regress(
 \item{dist}{distribution of the response tensor, see "details"}
 
 \item{traj_long}{if "TRUE", set the minimal iteration number to 8; if "FALSE", set the minimal iteration number to 0}
+
+\item{initial}{initialization of the alternating optimiation, "random" for random initialization, "QR_tucker" for deterministic initialization using tucker decomposition}
 }
 \value{
 a list containing the following:
@@ -71,6 +74,8 @@ Constraint \code{penalty} adds log-barrier regularizer to
            solve the objective function. The "solver" passes to the argument "method" in function "optim".
 
            \code{dist} specifies three distributions of response tensor: binary, poisson and normal distribution.
+           
+           If \code{dist} is set to "normal" and \code{initial} is set to "QR_tucker", then the function returns the results after initialization.
 }
 \examples{
 seed = 34
@@ -78,5 +83,5 @@ dist = 'binary'
 data=sim_data(seed, whole_shape = c(20,20,20), core_shape=c(3,3,3),
 p=c(5,5,5),dist=dist, dup=5, signal=4)
 re = tensor_regress(data$tsr[[1]],data$X_covar1,data$X_covar2,data$X_covar3,
-core_shape=c(3,3,3),Nsim=10, cons = 'non', dist = dist)
+core_shape=c(3,3,3),niter=10, cons = 'non', dist = dist,initial = "random")
 }
