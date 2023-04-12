@@ -2,7 +2,7 @@
 library(pracma)
 #library(gtools)
 library(MASS)
-library(speedglm)
+#library(speedglm)
 #library(fastglm)
 #library(rgl)
 #library("RColorBrewer")

@@ -21,7 +21,13 @@ importFrom("utils", "data", "setTxtProgressBar", "txtProgressBar","head","tail")
 
 importFrom("MASS","ginv")
 importFrom("pracma","randortho")
-importFrom("speedglm","speedglm",'speedlm')
 importFrom("stats", "binomial", "coef", "dbinom", "dnorm", "dpois",
                "glm", "lm", "logLik", "model.matrix", "optim", "plogis",
                "poisson", "rbinom", "rnorm", "rpois", "runif","fft")
+
+importFrom("methods", "as")
+importFrom("stats", ".checkMFClasses", ".getXlevels",
+             "delete.response", "dgamma", "family", "fitted", "formula",
+             "gaussian", "getCall", "get_all_vars", "model.frame",
+             "model.frame.default", "model.offset", "na.pass",
+             "napredict", "pchisq", "pf", "terms", "update.default")
